@@ -1,4 +1,4 @@
-import { Room, RoomStatus } from 'shared';
+import { Room, RoomStatus, MAX_SACRIFICES } from 'shared';
 import { generateRoomCode } from '../utils/roomCode';
 
 const ROOM_TTL_MS = 2 * 60 * 60 * 1000;        // 2 hours max for any room
@@ -22,6 +22,7 @@ class RoomStore {
       players: new Map(),
       moves: [],
       numberRange: range,
+      sacrificesRemaining: MAX_SACRIFICES,
       createdAt: Date.now(),
     };
 

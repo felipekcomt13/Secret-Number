@@ -26,8 +26,8 @@ export default function AdminCreateRoom() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-dvh px-6">
-      <div className="glass rounded-3xl p-10 max-w-sm w-full text-center animate-scale-in border-gradient-cyan">
+    <div className="flex flex-col items-center justify-center min-h-dvh px-4 md:px-6">
+      <div className="glass rounded-3xl p-6 md:p-10 max-w-sm w-full text-center animate-scale-in border-gradient-cyan">
         <div className="w-14 h-14 rounded-2xl bg-bbva-core-blue/15 border border-bbva-core-blue/25 flex items-center justify-center mx-auto mb-6">
           <span className="text-2xl font-mono font-bold text-bbva-core-blue">+</span>
         </div>

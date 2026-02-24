@@ -6,21 +6,21 @@ export default function RoleSelect() {
   const { dispatch } = useGame();
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-dvh px-6 py-12">
+    <div className="flex flex-col items-center justify-center min-h-dvh px-4 md:px-6 py-8 md:py-12">
       {/* Decorative floating numbers */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none select-none" aria-hidden>
-        <span className="absolute top-[12%] left-[8%] text-8xl font-mono font-bold text-bbva-core-blue/[0.07] animate-float">7</span>
-        <span className="absolute top-[20%] right-[12%] text-7xl font-mono font-bold text-bbva-core-blue/[0.07] animate-float" style={{ animationDelay: '1s' }}>3</span>
-        <span className="absolute bottom-[18%] left-[15%] text-9xl font-mono font-bold text-bbva-core-blue/[0.07] animate-float" style={{ animationDelay: '0.5s' }}>42</span>
-        <span className="absolute bottom-[25%] right-[8%] text-8xl font-mono font-bold text-bbva-core-blue/[0.07] animate-float" style={{ animationDelay: '1.5s' }}>?</span>
+        <span className="absolute top-[12%] left-[8%] text-5xl sm:text-7xl md:text-8xl font-mono font-bold text-bbva-core-blue/[0.07] animate-float">7</span>
+        <span className="absolute top-[20%] right-[12%] text-4xl sm:text-6xl md:text-7xl font-mono font-bold text-bbva-core-blue/[0.07] animate-float" style={{ animationDelay: '1s' }}>3</span>
+        <span className="absolute bottom-[18%] left-[15%] text-6xl sm:text-8xl md:text-9xl font-mono font-bold text-bbva-core-blue/[0.07] animate-float" style={{ animationDelay: '0.5s' }}>42</span>
+        <span className="absolute bottom-[25%] right-[8%] text-5xl sm:text-7xl md:text-8xl font-mono font-bold text-bbva-core-blue/[0.07] animate-float" style={{ animationDelay: '1.5s' }}>?</span>
       </div>
 
       {/* Title block */}
-      <div className="relative animate-fade-up mb-16 text-center">
+      <div className="relative animate-fade-up mb-10 md:mb-16 text-center">
         <p className="font-mono text-xs tracking-[0.4em] uppercase text-bbva-aqua/60 mb-4">
           Descifra el misterio
         </p>
-        <h1 className="font-display text-6xl sm:text-7xl font-bold tracking-tight text-bbva-white leading-none">
+        <h1 className="font-display text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight text-bbva-white leading-none">
           Secret
           <br />
           <span className="text-glow-aqua text-bbva-aqua">Number</span>
@@ -29,13 +29,13 @@ export default function RoleSelect() {
       </div>
 
       {/* Role cards */}
-      <div className="flex flex-col sm:flex-row gap-4 w-full max-w-lg animate-fade-up" style={{ animationDelay: '200ms' }}>
+      <div className="flex flex-col sm:flex-row gap-4 w-full max-w-lg animate-fade-up px-2 sm:px-0" style={{ animationDelay: '200ms' }}>
         <button
           onClick={() => {
             dispatch({ type: 'SET_ROLE', role: 'admin' });
             navigate('/admin');
           }}
-          className="group relative flex-1 glass rounded-2xl p-8 text-left transition-all duration-300 hover:bg-bbva-blue/50 cursor-pointer border-gradient-cyan"
+          className="group relative flex-1 glass rounded-2xl p-6 md:p-8 text-left transition-all duration-300 hover:bg-bbva-blue/50 cursor-pointer border-gradient-cyan"
         >
           <div className="flex items-center gap-3 mb-3">
             <span className="w-10 h-10 rounded-xl bg-bbva-core-blue/15 border border-bbva-core-blue/25 flex items-center justify-center text-bbva-core-blue text-lg font-mono font-bold">
@@ -56,7 +56,7 @@ export default function RoleSelect() {
             dispatch({ type: 'SET_ROLE', role: 'player' });
             navigate('/play');
           }}
-          className="group relative flex-1 glass rounded-2xl p-8 text-left transition-all duration-300 hover:bg-bbva-blue/50 cursor-pointer border-gradient-cyan"
+          className="group relative flex-1 glass rounded-2xl p-6 md:p-8 text-left transition-all duration-300 hover:bg-bbva-blue/50 cursor-pointer border-gradient-cyan"
         >
           <div className="flex items-center gap-3 mb-3">
             <span className="w-10 h-10 rounded-xl bg-bbva-aqua/10 border border-bbva-aqua/20 flex items-center justify-center text-bbva-aqua text-lg font-mono font-bold">

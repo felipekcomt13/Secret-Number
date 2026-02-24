@@ -6,8 +6,9 @@ export interface Player {
   socketId: string;
   secretNumber: number;
   availableOperations: Operation[];
-  coins: number;
+  sacrificeCount: number;
   guesses: Record<string, number | null>; // playerId -> guessed number
+  bet: string | null; // playerId of who they bet will finish last
   submitted: boolean;
   connected: boolean;
   score?: number;
@@ -18,7 +19,7 @@ export interface PublicPlayer {
   name: string;
   secretNumber?: number;
   availableOperations: Operation[];
-  coins: number;
+  hasBet: boolean;
   submitted: boolean;
   connected: boolean;
   score?: number;
@@ -31,7 +32,7 @@ export interface Move {
   playerBId: string;
   playerBName: string;
   operation: Operation;
-  result: number;
+  result: number | string;
   timestamp: number;
 }
 
@@ -42,6 +43,7 @@ export interface Room {
   players: Map<string, Player>;
   moves: Move[];
   numberRange: { min: number; max: number };
+  sacrificesRemaining: number;
   createdAt: number;
 }
 
@@ -49,8 +51,17 @@ export interface PlayerScore {
   playerId: string;
   playerName: string;
   secretNumber: number;
-  correct: number;
-  incorrect: number;
-  blank: number;
+  selfCorrect: boolean;
+  selfPoints: number;
+  othersCorrect: number;
+  othersIncorrect: number;
+  othersBlank: number;
+  othersPoints: number;
+  guessedByOthers: number;
+  guessedByPenalty: number;
+  betTargetName: string | null;
+  betCorrect: boolean | null;
+  betPoints: number;
+  sacrificePenalty: number;
   score: number;
 }

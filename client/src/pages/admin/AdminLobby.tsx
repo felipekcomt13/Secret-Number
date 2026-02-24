@@ -36,13 +36,13 @@ export default function AdminLobby() {
     <div className="flex flex-col min-h-dvh">
       <Header title="Lobby" roomCode={state.roomCode} />
 
-      <div className="flex flex-col items-center flex-1 px-6 py-8">
+      <div className="flex flex-col items-center flex-1 px-4 md:px-6 py-6 md:py-8">
         {/* Room code hero */}
-        <div className="glass rounded-2xl px-10 py-8 mb-10 text-center glow-aqua animate-fade-up">
+        <div className="glass rounded-2xl px-6 py-6 md:px-10 md:py-8 mb-8 md:mb-10 text-center glow-aqua animate-fade-up">
           <p className="font-mono text-[10px] tracking-[0.4em] uppercase text-bbva-aqua/50 mb-3">
             Codigo de Sala
           </p>
-          <p className="font-mono text-5xl sm:text-6xl font-bold tracking-[0.35em] text-bbva-aqua text-glow-aqua">
+          <p className="font-mono text-4xl sm:text-5xl md:text-6xl font-bold tracking-[0.35em] text-bbva-aqua text-glow-aqua">
             {state.roomCode}
           </p>
           <p className="mt-3 text-xs text-bbva-gray">

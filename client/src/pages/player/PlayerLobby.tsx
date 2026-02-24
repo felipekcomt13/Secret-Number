@@ -27,7 +27,7 @@ export default function PlayerLobby() {
 
   return (
     <div className="flex flex-col min-h-dvh">
-      <Header title="Sala de Espera" roomCode={state.roomCode} />
+      <Header title="Sala de Espera" roomCode={state.roomCode} playerName={state.playerName} />
 
       <div className="flex flex-col items-center justify-center flex-1 px-6 py-8">
         {/* Waiting animation */}

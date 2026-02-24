@@ -1,5 +1,5 @@
 import { Server, Socket } from 'socket.io';
-import { ClientToServerEvents, ServerToClientEvents, DEFAULT_NUMBER_RANGE, RoomStatus } from 'shared';
+import { ClientToServerEvents, ServerToClientEvents, DEFAULT_NUMBER_RANGE, RoomStatus, Operation } from 'shared';
 import { roomStore } from '../state/RoomStore';
 import { assignSecretNumbers, executeOperation, calculateScores, getPublicPlayers, getAdminPlayers } from '../state/GameEngine';
 
@@ -47,6 +47,29 @@ export function registerAdminHandlers(io: TypedServer, socket: TypedSocket) {
 
     io.to(room.code).emit('game:operation-result', { move: result.move! });
     callback({ ok: true, result: result.move!.result });
+  });
+
+  socket.on('admin:sacrifice', (data, callback) => {
+    const room = roomStore.get(data.code);
+    if (!room) return callback({ ok: false, error: 'Sala no encontrada' });
+    if (room.adminSocketId !== socket.id) return callback({ ok: false, error: 'No eres admin' });
+    if (room.status !== RoomStatus.PLAYING) return callback({ ok: false, error: 'El juego no está en curso' });
+    if (room.sacrificesRemaining <= 0) return callback({ ok: false, error: 'No quedan sacrificios disponibles' });
+
+    const player = room.players.get(data.playerId);
+    if (!player) return callback({ ok: false, error: 'Jugador no encontrado' });
+
+    room.sacrificesRemaining--;
+    player.sacrificeCount++;
+    player.availableOperations.push(Operation.ADD, Operation.MULTIPLY, Operation.DIVIDE, Operation.ZERO_CARD);
+
+    io.to(room.code).emit('game:sacrifice-used', {
+      playerId: data.playerId,
+      playerName: player.name,
+      sacrificesRemaining: room.sacrificesRemaining,
+      availableOperations: [...player.availableOperations],
+    });
+    callback({ ok: true });
   });
 
   socket.on('admin:end-game', (data, callback) => {

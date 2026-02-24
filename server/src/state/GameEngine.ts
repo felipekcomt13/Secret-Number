@@ -6,6 +6,7 @@ import {
   PlayerScore,
   Operation,
   RoomStatus,
+  SACRIFICE_PENALTY,
   computeOperation,
   isOperationAvailable,
 } from 'shared';
@@ -72,35 +73,116 @@ export function executeOperation(
 export function calculateScores(room: Room): PlayerScore[] {
   const playerIds = Array.from(room.players.keys());
 
+  // First pass: compute base scores (without bet) to determine last place
+  const baseScores = new Map<string, number>();
+  for (const pid of playerIds) {
+    const player = room.players.get(pid)!;
+
+    // Self guess
+    const selfGuess = player.guesses[pid];
+    const selfCorrect = selfGuess != null && selfGuess === player.secretNumber;
+    const selfPoints = selfGuess != null ? (selfCorrect ? 5 : -5) : 0;
+
+    // Others guesses
+    let othersPoints = 0;
+    for (const otherId of playerIds) {
+      if (otherId === pid) continue;
+      const guessed = player.guesses[otherId];
+      if (guessed == null) continue;
+      const actual = room.players.get(otherId)!.secretNumber;
+      othersPoints += guessed === actual ? 1 : -1;
+    }
+
+    // Guessed by others penalty
+    let guessedByOthers = 0;
+    for (const otherId of playerIds) {
+      if (otherId === pid) continue;
+      const other = room.players.get(otherId)!;
+      if (other.guesses[pid] != null && other.guesses[pid] === player.secretNumber) {
+        guessedByOthers++;
+      }
+    }
+
+    const sacrificePenalty = player.sacrificeCount * SACRIFICE_PENALTY;
+    baseScores.set(pid, selfPoints + othersPoints - (guessedByOthers * 2) - sacrificePenalty);
+  }
+
+  // Find last place (lowest base score)
+  let lastPlaceId = playerIds[0];
+  let lowestScore = baseScores.get(playerIds[0])!;
+  for (const pid of playerIds) {
+    const s = baseScores.get(pid)!;
+    if (s < lowestScore) {
+      lowestScore = s;
+      lastPlaceId = pid;
+    }
+  }
+
+  // Second pass: build full PlayerScore with bet resolution
   return playerIds.map((pid) => {
     const player = room.players.get(pid)!;
-    let correct = 0;
-    let incorrect = 0;
-    let blank = 0;
 
+    // Self guess
+    const selfGuess = player.guesses[pid];
+    const selfCorrect = selfGuess != null && selfGuess === player.secretNumber;
+    const selfPoints = selfGuess != null ? (selfCorrect ? 5 : -5) : 0;
+
+    // Others guesses
+    let othersCorrect = 0;
+    let othersIncorrect = 0;
+    let othersBlank = 0;
     for (const otherId of playerIds) {
       if (otherId === pid) continue;
       const guessed = player.guesses[otherId];
       const actual = room.players.get(otherId)!.secretNumber;
+      if (guessed == null) othersBlank++;
+      else if (guessed === actual) othersCorrect++;
+      else othersIncorrect++;
+    }
+    const othersPoints = othersCorrect - othersIncorrect;
 
-      if (guessed == null) {
-        blank++;
-      } else if (guessed === actual) {
-        correct++;
-      } else {
-        incorrect++;
+    // Guessed by others
+    let guessedByOthers = 0;
+    for (const otherId of playerIds) {
+      if (otherId === pid) continue;
+      const other = room.players.get(otherId)!;
+      if (other.guesses[pid] != null && other.guesses[pid] === player.secretNumber) {
+        guessedByOthers++;
       }
     }
+    const guessedByPenalty = guessedByOthers * 2;
 
-    const score = correct - incorrect;
+    // Bet
+    const hasBet = player.bet !== null && player.bet !== 'skip';
+    let betTargetName: string | null = null;
+    let betCorrect: boolean | null = null;
+    let betPoints = 0;
+    if (hasBet) {
+      const betTarget = room.players.get(player.bet!);
+      betTargetName = betTarget?.name ?? null;
+      betCorrect = player.bet === lastPlaceId;
+      betPoints = betCorrect ? 2 : -2;
+    }
+
+    const sacrificePenalty = player.sacrificeCount * SACRIFICE_PENALTY;
+    const score = selfPoints + othersPoints - guessedByPenalty + betPoints - sacrificePenalty;
 
     return {
       playerId: pid,
       playerName: player.name,
       secretNumber: player.secretNumber,
-      correct,
-      incorrect,
-      blank,
+      selfCorrect,
+      selfPoints,
+      othersCorrect,
+      othersIncorrect,
+      othersBlank,
+      othersPoints,
+      guessedByOthers,
+      guessedByPenalty,
+      betTargetName,
+      betCorrect,
+      betPoints,
+      sacrificePenalty,
       score,
     };
   }).sort((a, b) => b.score - a.score);
@@ -111,7 +193,7 @@ export function toPublicPlayer(player: Player): PublicPlayer {
     id: player.id,
     name: player.name,
     availableOperations: [...player.availableOperations],
-    coins: player.coins,
+    hasBet: player.bet !== null,
     submitted: player.submitted,
     connected: player.connected,
     score: player.score,

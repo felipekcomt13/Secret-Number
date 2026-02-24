@@ -1,5 +1,13 @@
 import { createContext, useContext, useReducer, ReactNode } from 'react';
-import type { PublicPlayer, Move, PlayerScore, Operation } from 'shared';
+import { MAX_SACRIFICES, type PublicPlayer, type Move, type PlayerScore, type Operation } from 'shared';
+
+export interface Activity {
+  id: string;
+  kind: 'operation' | 'submitted' | 'sacrifice' | 'misc';
+  text: string;
+  timestamp: number;
+  icon: string;
+}
 
 interface GameState {
   role: 'admin' | 'player' | null;
@@ -8,8 +16,12 @@ interface GameState {
   playerName: string | null;
   players: PublicPlayer[];
   moves: Move[];
+  activities: Activity[];
   scores: PlayerScore[];
+  sacrificesRemaining: number;
   guesses: Record<string, number | null>;
+  bet: string | null;
+  betSubmitted: boolean;
   submitted: boolean;
 }
 
@@ -24,12 +36,23 @@ type GameAction =
   | { type: 'GAME_STARTED'; players: PublicPlayer[] }
   | { type: 'ADD_MOVE'; move: Move }
   | { type: 'UPDATE_PLAYERS_OPS'; players: PublicPlayer[] }
-  | { type: 'COIN_USED'; playerId: string; coins: number; availableOperations: Operation[] }
+  | { type: 'SET_BET'; bet: string | null }
+  | { type: 'BET_SUBMITTED' }
+  | { type: 'BET_PLACED'; playerId: string }
+  | { type: 'SACRIFICE_USED'; playerId: string; playerName: string; sacrificesRemaining: number; availableOperations: Operation[] }
   | { type: 'PLAYER_SUBMITTED'; playerId: string }
+  | { type: 'GUESS_CHANGED'; playerName: string; targetName: string; action: 'set' | 'removed' }
   | { type: 'SET_GUESSES'; guesses: Record<string, number | null> }
   | { type: 'SET_SUBMITTED' }
   | { type: 'SET_SCORES'; scores: PlayerScore[] }
   | { type: 'RESET' };
+
+const OP_FRIENDLY: Record<string, string> = {
+  '+': 'Suma',
+  '*': 'Multiplicación',
+  '/': 'División',
+  '0': 'Carta Cero',
+};
 
 const initialState: GameState = {
   role: null,
@@ -38,8 +61,12 @@ const initialState: GameState = {
   playerName: null,
   players: [],
   moves: [],
+  activities: [],
   scores: [],
+  sacrificesRemaining: MAX_SACRIFICES,
   guesses: {},
+  bet: null,
+  betSubmitted: false,
   submitted: false,
 };
 
@@ -71,18 +98,48 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       };
     case 'GAME_STARTED':
       return { ...state, players: action.players };
-    case 'ADD_MOVE':
+    case 'SET_BET':
+      return { ...state, bet: action.bet };
+    case 'BET_SUBMITTED':
+      return { ...state, betSubmitted: true };
+    case 'BET_PLACED': {
+      const betPlayer = state.players.find((p) => p.id === action.playerId);
+      const betActivity: Activity = {
+        id: `bet-${Date.now()}`,
+        kind: 'misc',
+        text: `${betPlayer?.name || 'Un jugador'} realizó su apuesta`,
+        timestamp: Date.now(),
+        icon: '🎲',
+      };
       return {
         ...state,
-        moves: [...state.moves, action.move],
-        // Update player operations from move
+        activities: [...state.activities, betActivity],
+        players: state.players.map((p) =>
+          p.id === action.playerId ? { ...p, hasBet: true } : p
+        ),
+      };
+    }
+    case 'ADD_MOVE': {
+      const m = action.move;
+      const opName = OP_FRIENDLY[m.operation] || m.operation;
+      const activity: Activity = {
+        id: m.id,
+        kind: 'operation',
+        text: `${m.playerAName} y ${m.playerBName} usaron la carta "${opName}"`,
+        timestamp: m.timestamp,
+        icon: m.operation,
+      };
+      return {
+        ...state,
+        moves: [...state.moves, m],
+        activities: [...state.activities, activity],
         players: state.players.map((p) => {
-          if (p.id === action.move.playerAId || p.id === action.move.playerBId) {
+          if (p.id === m.playerAId || p.id === m.playerBId) {
             return {
               ...p,
               availableOperations: (() => {
                 const ops = [...p.availableOperations];
-                const idx = ops.indexOf(action.move.operation);
+                const idx = ops.indexOf(m.operation);
                 if (idx !== -1) ops.splice(idx, 1);
                 return ops;
               })(),
@@ -91,22 +148,58 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           return p;
         }),
       };
-    case 'COIN_USED':
+    }
+    case 'SACRIFICE_USED': {
+      const sacActivity: Activity = {
+        id: `sac-${Date.now()}`,
+        kind: 'sacrifice',
+        text: `${action.playerName} usó un sacrificio (-3 pts)`,
+        timestamp: Date.now(),
+        icon: '🔥',
+      };
       return {
         ...state,
+        sacrificesRemaining: action.sacrificesRemaining,
+        activities: [...state.activities, sacActivity],
         players: state.players.map((p) =>
           p.id === action.playerId
-            ? { ...p, coins: action.coins, availableOperations: action.availableOperations }
+            ? { ...p, availableOperations: action.availableOperations }
             : p
         ),
       };
-    case 'PLAYER_SUBMITTED':
+    }
+    case 'PLAYER_SUBMITTED': {
+      const subPlayer = state.players.find((p) => p.id === action.playerId);
+      const subActivity: Activity = {
+        id: `sub-${Date.now()}`,
+        kind: 'submitted',
+        text: `${subPlayer?.name || 'Un jugador'} envió sus respuestas`,
+        timestamp: Date.now(),
+        icon: '✓',
+      };
       return {
         ...state,
+        activities: [...state.activities, subActivity],
         players: state.players.map((p) =>
           p.id === action.playerId ? { ...p, submitted: true } : p
         ),
       };
+    }
+    case 'GUESS_CHANGED': {
+      const guessActivity: Activity = {
+        id: `guess-${Date.now()}-${Math.random()}`,
+        kind: action.action === 'set' ? 'submitted' : 'misc',
+        text: action.action === 'set'
+          ? `${action.playerName} registró el número de ${action.targetName}`
+          : `${action.playerName} quitó el número de ${action.targetName}`,
+        timestamp: Date.now(),
+        icon: action.action === 'set' ? '📝' : '✕',
+      };
+      return {
+        ...state,
+        activities: [...state.activities, guessActivity],
+      };
+    }
     case 'SET_GUESSES':
       return { ...state, guesses: action.guesses };
     case 'SET_SUBMITTED':

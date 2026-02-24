@@ -14,11 +14,15 @@ function countNumbersWithZero(a: number, b: number): number {
   return count;
 }
 
-export function computeOperation(a: number, b: number, op: Operation): number | null {
+export function computeOperation(a: number, b: number, op: Operation): number | string | null {
   switch (op) {
-    // Suma: revela la suma directa de ambos números
-    case Operation.ADD:
-      return a + b;
+    // Suma: revela la suma si está entre 20 y 180, sino indica el rango
+    case Operation.ADD: {
+      const sum = a + b;
+      if (sum > 180) return 'La suma es mayor a 180';
+      if (sum < 20) return 'La suma es menor a 20';
+      return sum;
+    }
 
     // Multiplicación: revela solo el último dígito del producto
     case Operation.MULTIPLY:

@@ -20,7 +20,7 @@ export interface ClientToServerEvents {
 
   'admin:execute-operation': (
     data: { code: string; playerAId: string; playerBId: string; operation: Operation },
-    callback: (response: { ok: boolean; result?: number; error?: string }) => void
+    callback: (response: { ok: boolean; result?: number | string; error?: string }) => void
   ) => void;
 
   'player:update-guesses': (
@@ -37,8 +37,13 @@ export interface ClientToServerEvents {
     callback: (response: { ok: boolean; error?: string }) => void
   ) => void;
 
-  'player:use-coin': (
+  'admin:sacrifice': (
     data: { code: string; playerId: string },
+    callback: (response: { ok: boolean; error?: string }) => void
+  ) => void;
+
+  'player:place-bet': (
+    data: { code: string; playerId: string; targetId: string | null },
     callback: (response: { ok: boolean; error?: string }) => void
   ) => void;
 
@@ -56,7 +61,9 @@ export interface ServerToClientEvents {
   'game:operation-result': (data: { move: Move }) => void;
   'game:player-submitted': (data: { playerId: string; playerName: string }) => void;
   'game:results': (data: { scores: PlayerScore[] }) => void;
-  'game:coin-used': (data: { playerId: string; coins: number; availableOperations: Operation[] }) => void;
+  'game:bet-placed': (data: { playerId: string }) => void;
+  'game:sacrifice-used': (data: { playerId: string; playerName: string; sacrificesRemaining: number; availableOperations: Operation[] }) => void;
+  'game:guess-changed': (data: { playerName: string; targetName: string; action: 'set' | 'removed' }) => void;
   'room:closed': (data: { reason: string }) => void;
   'error': (data: { message: string }) => void;
 }

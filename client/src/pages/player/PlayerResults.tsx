@@ -13,10 +13,10 @@ export default function PlayerResults() {
     <div className="flex flex-col min-h-dvh">
       <Header title="Resultados" roomCode={state.roomCode} />
 
-      <div className="flex-1 px-6 py-8">
+      <div className="flex-1 px-4 md:px-6 py-6 md:py-8">
         {/* Personal score hero */}
         {myScore && (
-          <div className="relative glass rounded-2xl p-8 mb-8 text-center overflow-hidden glow-violet animate-scale-in">
+          <div className="relative glass rounded-2xl p-5 md:p-8 mb-6 md:mb-8 text-center overflow-hidden glow-violet animate-scale-in">
             {/* Background accent */}
             <div className="absolute inset-0 bg-gradient-to-br from-bbva-core-blue/15 via-transparent to-bbva-aqua/5 pointer-events-none" />
 
@@ -24,26 +24,41 @@ export default function PlayerResults() {
               <p className="font-mono text-[10px] tracking-[0.4em] uppercase text-bbva-gray mb-2">
                 Tu puntaje
               </p>
-              <p className="text-6xl font-mono font-bold text-bbva-white text-glow-aqua mb-2 animate-count-up">
+              <p className="text-5xl md:text-6xl font-mono font-bold text-bbva-white text-glow-aqua mb-2 animate-count-up">
                 {myScore.score}
               </p>
               <p className="text-sm text-bbva-gray">
                 Puesto <span className="text-bbva-aqua font-semibold">#{myRank}</span> de {state.scores.length}
               </p>
 
-              <div className="flex justify-center gap-5 mt-5 text-sm">
+              {/* Score breakdown */}
+              <div className="flex flex-wrap justify-center gap-4 mt-5 text-sm">
+                <span className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${myScore.selfCorrect ? 'bg-bbva-aqua' : 'bg-bbva-danger'}`} />
+                  <span className="text-bbva-white/60">Mi num: {myScore.selfPoints > 0 ? '+' : ''}{myScore.selfPoints}</span>
+                </span>
                 <span className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-bbva-success" />
-                  <span className="text-bbva-white/60">{myScore.correct} aciertos</span>
+                  <span className="text-bbva-white/60">Otros: {myScore.othersPoints > 0 ? '+' : ''}{myScore.othersPoints}</span>
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-bbva-danger" />
-                  <span className="text-bbva-white/60">{myScore.incorrect} fallos</span>
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-bbva-gray/40" />
-                  <span className="text-bbva-white/60">{myScore.blank} blancos</span>
-                </span>
+                {myScore.guessedByOthers > 0 && (
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-bbva-danger" />
+                    <span className="text-bbva-white/60">Descubierto: -{myScore.guessedByPenalty}</span>
+                  </span>
+                )}
+                {myScore.betCorrect != null && (
+                  <span className="flex items-center gap-1.5">
+                    <span className={`w-2 h-2 rounded-full ${myScore.betCorrect ? 'bg-bbva-warning' : 'bg-bbva-danger'}`} />
+                    <span className="text-bbva-white/60">Apuesta: {myScore.betPoints > 0 ? '+' : ''}{myScore.betPoints}</span>
+                  </span>
+                )}
+                {myScore.sacrificePenalty > 0 && (
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-bbva-danger" />
+                    <span className="text-bbva-white/60">Sacrificio: -{myScore.sacrificePenalty}</span>
+                  </span>
+                )}
               </div>
 
               <div className="mt-5 pt-5 border-t border-bbva-core-blue/15">
