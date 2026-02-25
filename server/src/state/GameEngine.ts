@@ -104,7 +104,7 @@ export function calculateScores(room: Room): PlayerScore[] {
     }
 
     const sacrificePenalty = player.sacrificeCount * SACRIFICE_PENALTY;
-    baseScores.set(pid, selfPoints + othersPoints - (guessedByOthers * 2) - sacrificePenalty);
+    baseScores.set(pid, selfPoints + othersPoints - (guessedByOthers * 1) - sacrificePenalty);
   }
 
   // Find last place (lowest base score)
@@ -150,7 +150,7 @@ export function calculateScores(room: Room): PlayerScore[] {
         guessedByOthers++;
       }
     }
-    const guessedByPenalty = guessedByOthers * 2;
+    const guessedByPenalty = guessedByOthers * 1;
 
     // Bet
     const hasBet = player.bet !== null && player.bet !== 'skip';
@@ -161,7 +161,7 @@ export function calculateScores(room: Room): PlayerScore[] {
       const betTarget = room.players.get(player.bet!);
       betTargetName = betTarget?.name ?? null;
       betCorrect = player.bet === lastPlaceId;
-      betPoints = betCorrect ? 2 : -2;
+      betPoints = betCorrect ? 2 : 0;
     }
 
     const sacrificePenalty = player.sacrificeCount * SACRIFICE_PENALTY;

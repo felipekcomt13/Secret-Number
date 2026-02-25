@@ -81,8 +81,8 @@ export default function AdminResults() {
         <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-bbva-gray/50 font-mono animate-fade-up" style={{ animationDelay: '300ms' }}>
           <span><span className="text-bbva-aqua/60">Yo</span> = mi número (±5)</span>
           <span><span className="text-bbva-success/60">Otros</span> = otros números (±1)</span>
-          <span><span className="text-bbva-danger/60">Desc</span> = descubierto (-2 c/u)</span>
-          <span>🎲 = apuesta (±2)</span>
+          <span><span className="text-bbva-danger/60">Desc</span> = descubierto (-1 c/u)</span>
+          <span>🎲 = apuesta (+2/0)</span>
           <span>🔥 = sacrificio (-3)</span>
         </div>
 
