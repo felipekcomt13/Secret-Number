@@ -1,4 +1,4 @@
-import { Operation } from './enums';
+import { Operation, RoomStatus } from './enums';
 import { PublicPlayer, Move, PlayerScore } from './models';
 
 
@@ -49,7 +49,30 @@ export interface ClientToServerEvents {
 
   'player:reconnect': (
     data: { code: string; playerId: string },
-    callback: (response: { ok: boolean; players?: PublicPlayer[]; moves?: Move[]; error?: string }) => void
+    callback: (response: {
+      ok: boolean;
+      players?: PublicPlayer[];
+      moves?: Move[];
+      guesses?: Record<string, number | null>;
+      submitted?: boolean;
+      betSubmitted?: boolean;
+      sacrificesRemaining?: number;
+      status?: RoomStatus;
+      error?: string;
+    }) => void
+  ) => void;
+
+  'admin:reconnect': (
+    data: { code: string },
+    callback: (response: {
+      ok: boolean;
+      players?: PublicPlayer[];
+      moves?: Move[];
+      sacrificesRemaining?: number;
+      status?: RoomStatus;
+      scores?: PlayerScore[];
+      error?: string;
+    }) => void
   ) => void;
 }
 

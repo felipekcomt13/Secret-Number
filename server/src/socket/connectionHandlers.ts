@@ -1,10 +1,14 @@
 import { Server, Socket } from 'socket.io';
 import { ClientToServerEvents, ServerToClientEvents } from 'shared';
 import { roomStore } from '../state/RoomStore';
-import { getPublicPlayers } from '../state/GameEngine';
+import { getPublicPlayers, getAdminPlayers } from '../state/GameEngine';
 
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
+
+// Grace period timers for admin disconnections
+const adminDisconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const ADMIN_GRACE_PERIOD_MS = 60_000; // 1 minute
 
 export function registerConnectionHandlers(io: TypedServer, socket: TypedSocket) {
   socket.on('player:reconnect', (data, callback) => {
@@ -25,6 +29,35 @@ export function registerConnectionHandlers(io: TypedServer, socket: TypedSocket)
       ok: true,
       players: getPublicPlayers(room),
       moves: room.moves,
+      guesses: player.guesses,
+      submitted: player.submitted,
+      betSubmitted: player.bet !== null,
+      sacrificesRemaining: room.sacrificesRemaining,
+      status: room.status,
+    });
+  });
+
+  socket.on('admin:reconnect', (data, callback) => {
+    const room = roomStore.get(data.code);
+    if (!room) return callback({ ok: false, error: 'Sala no encontrada' });
+
+    // Cancel any pending destruction timer
+    const timer = adminDisconnectTimers.get(room.code);
+    if (timer) {
+      clearTimeout(timer);
+      adminDisconnectTimers.delete(room.code);
+    }
+
+    // Update admin socket id
+    room.adminSocketId = socket.id;
+    socket.join(room.code);
+
+    callback({
+      ok: true,
+      players: getAdminPlayers(room),
+      moves: room.moves,
+      sacrificesRemaining: room.sacrificesRemaining,
+      status: room.status,
     });
   });
 
@@ -32,9 +65,17 @@ export function registerConnectionHandlers(io: TypedServer, socket: TypedSocket)
     // Check if disconnecting socket is an admin
     const adminRoom = roomStore.findByAdminSocket(socket.id);
     if (adminRoom) {
-      io.to(adminRoom.code).emit('room:closed', { reason: 'El administrador se ha desconectado' });
-      io.in(adminRoom.code).socketsLeave(adminRoom.code);
-      roomStore.delete(adminRoom.code);
+      // Start grace period instead of immediate destruction
+      const timer = setTimeout(() => {
+        adminDisconnectTimers.delete(adminRoom.code);
+        const room = roomStore.get(adminRoom.code);
+        if (room && room.adminSocketId === socket.id) {
+          io.to(room.code).emit('room:closed', { reason: 'El administrador se ha desconectado' });
+          io.in(room.code).socketsLeave(room.code);
+          roomStore.delete(room.code);
+        }
+      }, ADMIN_GRACE_PERIOD_MS);
+      adminDisconnectTimers.set(adminRoom.code, timer);
       return;
     }
 

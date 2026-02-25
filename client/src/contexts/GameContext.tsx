@@ -1,5 +1,5 @@
-import { createContext, useContext, useReducer, ReactNode } from 'react';
-import { MAX_SACRIFICES, type PublicPlayer, type Move, type PlayerScore, type Operation } from 'shared';
+import { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import { MAX_SACRIFICES, type PublicPlayer, type Move, type PlayerScore, type Operation, type RoomStatus } from 'shared';
 
 export interface Activity {
   id: string;
@@ -45,6 +45,8 @@ type GameAction =
   | { type: 'SET_GUESSES'; guesses: Record<string, number | null> }
   | { type: 'SET_SUBMITTED' }
   | { type: 'SET_SCORES'; scores: PlayerScore[] }
+  | { type: 'RESTORE_PLAYER_SESSION'; roomCode: string; playerId: string; playerName: string; players: PublicPlayer[]; moves: Move[]; guesses: Record<string, number | null>; submitted: boolean; betSubmitted: boolean; sacrificesRemaining: number; status: RoomStatus }
+  | { type: 'RESTORE_ADMIN_SESSION'; roomCode: string; players: PublicPlayer[]; moves: Move[]; sacrificesRemaining: number; status: RoomStatus; scores?: PlayerScore[] }
   | { type: 'RESET' };
 
 const OP_FRIENDLY: Record<string, string> = {
@@ -206,11 +208,64 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return { ...state, submitted: true };
     case 'SET_SCORES':
       return { ...state, scores: action.scores };
+    case 'RESTORE_PLAYER_SESSION':
+      return {
+        ...state,
+        role: 'player',
+        roomCode: action.roomCode,
+        playerId: action.playerId,
+        playerName: action.playerName,
+        players: action.players,
+        moves: action.moves,
+        guesses: action.guesses,
+        submitted: action.submitted,
+        betSubmitted: action.betSubmitted,
+        sacrificesRemaining: action.sacrificesRemaining,
+      };
+    case 'RESTORE_ADMIN_SESSION':
+      return {
+        ...state,
+        role: 'admin',
+        roomCode: action.roomCode,
+        players: action.players,
+        moves: action.moves,
+        sacrificesRemaining: action.sacrificesRemaining,
+        scores: action.scores ?? [],
+      };
     case 'RESET':
+      clearSession();
       return initialState;
     default:
       return state;
   }
+}
+
+// ── Session persistence ──
+const SESSION_KEYS = {
+  role: 'sn_role',
+  roomCode: 'sn_roomCode',
+  playerId: 'sn_playerId',
+  playerName: 'sn_playerName',
+} as const;
+
+function saveSession(state: GameState) {
+  if (state.role) sessionStorage.setItem(SESSION_KEYS.role, state.role);
+  if (state.roomCode) sessionStorage.setItem(SESSION_KEYS.roomCode, state.roomCode);
+  if (state.playerId) sessionStorage.setItem(SESSION_KEYS.playerId, state.playerId);
+  if (state.playerName) sessionStorage.setItem(SESSION_KEYS.playerName, state.playerName);
+}
+
+function clearSession() {
+  Object.values(SESSION_KEYS).forEach((k) => sessionStorage.removeItem(k));
+}
+
+export function getSavedSession() {
+  const role = sessionStorage.getItem(SESSION_KEYS.role) as 'admin' | 'player' | null;
+  const roomCode = sessionStorage.getItem(SESSION_KEYS.roomCode);
+  const playerId = sessionStorage.getItem(SESSION_KEYS.playerId);
+  const playerName = sessionStorage.getItem(SESSION_KEYS.playerName);
+  if (!role || !roomCode) return null;
+  return { role, roomCode, playerId, playerName };
 }
 
 interface GameContextValue {
@@ -222,6 +277,13 @@ const GameContext = createContext<GameContextValue | null>(null);
 
 export function GameProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(gameReducer, initialState);
+
+  // Persist session-critical data whenever it changes
+  useEffect(() => {
+    if (state.role && state.roomCode) {
+      saveSession(state);
+    }
+  }, [state.role, state.roomCode, state.playerId, state.playerName]);
 
   return (
     <GameContext.Provider value={{ state, dispatch }}>
